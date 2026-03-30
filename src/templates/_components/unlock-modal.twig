@@ -1,0 +1,37 @@
+{#
+  Rendered into the page by the IcecubeAsset bundle JS.
+  The JS injects targetType, targetId, and action before showing the modal.
+#}
+
+<div id="icecube-unlock-modal" class="icecube-modal" style="display:none;">
+    <div class="icecube-modal-backdrop"></div>
+    <div class="icecube-modal-body">
+        <h2>🔒 This item is locked by Icecube</h2>
+        <p>Enter the unlock password to continue.</p>
+
+        <form id="icecube-unlock-form">
+            <div class="field">
+                <div class="input">
+                    <input type="password"
+                           id="icecube-password"
+                           name="password"
+                           class="text fullwidth"
+                           placeholder="Unlock password"
+                           autocomplete="off">
+                </div>
+            </div>
+
+            <input type="hidden" id="icecube-target-type" name="targetType" value="">
+            <input type="hidden" id="icecube-target-id" name="targetId" value="">
+            <input type="hidden" id="icecube-action" name="action" value="">
+
+            <div class="icecube-modal-footer">
+                <div id="icecube-error" class="error" style="display:none;"></div>
+                <div class="btngroup">
+                    <button type="button" class="btn" id="icecube-cancel-btn">Cancel</button>
+                    <button type="submit" class="btn submit">Unlock</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

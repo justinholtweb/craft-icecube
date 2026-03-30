@@ -1,0 +1,70 @@
+{% import '_includes/forms.twig' as forms %}
+
+{{ forms.passwordField({
+    label: 'Master Unlock Password',
+    instructions: 'Set or change the master password used when no per-lock password is configured. Leave blank to keep the current password.',
+    id: 'masterPassword',
+    name: 'masterPassword',
+    value: '',
+    placeholder: settings.masterPasswordHash ? '••••••••' : 'Set a password',
+}) }}
+
+{% if settings.masterPasswordHash %}
+    <p class="light">A master password is currently set.</p>
+{% endif %}
+
+<hr>
+
+{{ forms.lightswitchField({
+    label: 'Admins Bypass Locks',
+    instructions: 'When enabled, admin users can save and delete locked content without entering a password.',
+    id: 'adminsBypass',
+    name: 'adminsBypass',
+    on: settings.adminsBypass,
+}) }}
+
+<hr>
+
+<h2>Supported Element Types</h2>
+
+{{ forms.lightswitchField({
+    label: 'Entries',
+    id: 'enableEntries',
+    name: 'enableEntries',
+    on: settings.enableEntries,
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Assets',
+    id: 'enableAssets',
+    name: 'enableAssets',
+    on: settings.enableAssets,
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Categories',
+    id: 'enableCategories',
+    name: 'enableCategories',
+    on: settings.enableCategories,
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Global Sets',
+    id: 'enableGlobals',
+    name: 'enableGlobals',
+    on: settings.enableGlobals,
+}) }}
+
+<hr>
+
+{{ forms.textField({
+    label: 'Unlock Session Duration (minutes)',
+    instructions: 'After entering the correct password, the unlock lasts this many minutes before requiring the password again.',
+    id: 'unlockTtlMinutes',
+    name: 'unlockTtlMinutes',
+    value: settings.unlockTtlMinutes,
+    type: 'number',
+    min: 1,
+    max: 1440,
+    size: 5,
+}) }}

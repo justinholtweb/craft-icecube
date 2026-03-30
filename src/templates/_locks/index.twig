@@ -1,0 +1,134 @@
+{% extends '_layouts/cp' %}
+{% set title = 'Icecube Locks' %}
+
+{% block content %}
+    <h2>Active Locks</h2>
+
+    {% if locks | length %}
+        <table class="data fullwidth">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Scope</th>
+                    <th>Target / Scope ID</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                    <th>Enabled</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lock in locks %}
+                    <tr>
+                        <td>{{ lock.targetType }}</td>
+                        <td>{{ lock.scope }}</td>
+                        <td>{{ lock.targetId ?? lock.scopeId ?? '—' }}</td>
+                        <td>{{ lock.lockEdit ? '🔒' : '—' }}</td>
+                        <td>{{ lock.lockDelete ? '🔒' : '—' }}</td>
+                        <td>{{ lock.enabled ? 'Yes' : 'No' }}</td>
+                        <td>{{ lock.notes ?? '' }}</td>
+                        <td>
+                            <form method="post" action="">
+                                {{ csrfInput() }}
+                                {{ actionInput('icecube/unlock/delete-lock') }}
+                                {{ redirectInput('icecube/locks') }}
+                                <input type="hidden" name="id" value="{{ lock.id }}">
+                                <button type="submit" class="btn small">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No locks configured yet.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Add a Lock</h2>
+
+    <form method="post" action="">
+        {{ csrfInput() }}
+        {{ actionInput('icecube/unlock/save-lock') }}
+        {{ redirectInput('icecube/locks') }}
+
+        {% import '_includes/forms.twig' as forms %}
+
+        {{ forms.selectField({
+            label: 'Target Type',
+            id: 'targetType',
+            name: 'targetType',
+            options: [
+                { label: 'Entry', value: 'entry' },
+                { label: 'Asset', value: 'asset' },
+                { label: 'Category', value: 'category' },
+                { label: 'Global Set', value: 'global' },
+            ],
+        }) }}
+
+        {{ forms.selectField({
+            label: 'Scope',
+            id: 'scope',
+            name: 'scope',
+            options: [
+                { label: 'Specific element', value: 'element' },
+                { label: 'Section (all entries)', value: 'section' },
+                { label: 'Volume (all assets)', value: 'volume' },
+                { label: 'Category group', value: 'group' },
+                { label: 'Global set', value: 'globalSet' },
+            ],
+        }) }}
+
+        {{ forms.textField({
+            label: 'Target ID',
+            instructions: 'The element ID or global-set ID for direct locks. Leave blank for rule-based locks.',
+            id: 'targetId',
+            name: 'targetId',
+        }) }}
+
+        {{ forms.textField({
+            label: 'Scope ID',
+            instructions: 'The section, volume, category-group, or global-set ID for rule-based locks.',
+            id: 'scopeId',
+            name: 'scopeId',
+        }) }}
+
+        {{ forms.lightswitchField({
+            label: 'Lock Editing',
+            id: 'lockEdit',
+            name: 'lockEdit',
+            on: true,
+        }) }}
+
+        {{ forms.lightswitchField({
+            label: 'Lock Deletion',
+            id: 'lockDelete',
+            name: 'lockDelete',
+            on: true,
+        }) }}
+
+        {{ forms.passwordField({
+            label: 'Per-Lock Password (optional)',
+            instructions: 'Leave blank to use the master password.',
+            id: 'password',
+            name: 'password',
+        }) }}
+
+        {{ forms.textareaField({
+            label: 'Notes',
+            id: 'notes',
+            name: 'notes',
+        }) }}
+
+        {{ forms.lightswitchField({
+            label: 'Enabled',
+            id: 'enabled',
+            name: 'enabled',
+            on: true,
+        }) }}
+
+        <button type="submit" class="btn submit">Save Lock</button>
+    </form>
+{% endblock %}

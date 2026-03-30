@@ -1,0 +1,172 @@
+/**
+ * Icecube — CP unlock modal and lock badge.
+ *
+ * Injected on element edit pages when a lock applies.
+ * Intercepts the Save/Delete form submission, shows the password modal,
+ * and posts to the unlock endpoint before allowing the form through.
+ */
+(function () {
+    'use strict';
+
+    // ── State ─────────────────────────────────────────────────
+    const state = {
+        targetType: null,
+        targetId: null,
+        pendingAction: null,   // 'edit' or 'delete'
+        pendingForm: null,
+        pendingEvent: null,
+    };
+
+    // ── Init ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        const meta = document.getElementById('icecube-meta');
+        if (!meta) return;
+
+        state.targetType = meta.dataset.targetType;
+        state.targetId   = meta.dataset.targetId;
+        const lockEdit   = meta.dataset.lockEdit === '1';
+        const lockDelete = meta.dataset.lockDelete === '1';
+
+        if (lockEdit) {
+            interceptSave();
+        }
+
+        if (lockDelete) {
+            interceptDelete();
+        }
+    });
+
+    // ── Intercept save ────────────────────────────────────────
+    function interceptSave() {
+        // Craft's main form for element editing
+        const form = document.getElementById('main-form') || document.querySelector('form#main');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            if (isUnlocked('edit')) return; // already unlocked, let through
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            state.pendingAction = 'edit';
+            state.pendingForm = form;
+            state.pendingEvent = e;
+            showModal('edit');
+        }, true); // capture phase so we fire first
+    }
+
+    // ── Intercept delete ──────────────────────────────────────
+    function interceptDelete() {
+        // Listen for clicks on delete buttons/actions
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-action="delete"], .btn.delete, #action-delete');
+            if (!btn) return;
+            if (isUnlocked('delete')) return;
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            state.pendingAction = 'delete';
+            showModal('delete');
+        }, true);
+    }
+
+    // ── Session unlock tracking ───────────────────────────────
+    const unlocked = { edit: false, delete: false };
+
+    function isUnlocked(action) {
+        return unlocked[action] === true;
+    }
+
+    // ── Modal ─────────────────────────────────────────────────
+    function showModal(action) {
+        const modal = document.getElementById('icecube-unlock-modal');
+        if (!modal) return;
+
+        document.getElementById('icecube-target-type').value = state.targetType;
+        document.getElementById('icecube-target-id').value   = state.targetId;
+        document.getElementById('icecube-action').value       = action;
+        document.getElementById('icecube-password').value     = '';
+        document.getElementById('icecube-error').style.display = 'none';
+
+        modal.style.display = 'flex';
+        document.getElementById('icecube-password').focus();
+    }
+
+    function hideModal() {
+        const modal = document.getElementById('icecube-unlock-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    // ── Modal event handlers ──────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('icecube-unlock-form');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitUnlock();
+        });
+
+        const cancelBtn = document.getElementById('icecube-cancel-btn');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', hideModal);
+        }
+
+        const backdrop = document.querySelector('.icecube-modal-backdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', hideModal);
+        }
+    });
+
+    // ── AJAX unlock ───────────────────────────────────────────
+    function submitUnlock() {
+        const password   = document.getElementById('icecube-password').value;
+        const targetType = document.getElementById('icecube-target-type').value;
+        const targetId   = document.getElementById('icecube-target-id').value;
+        const action     = document.getElementById('icecube-action').value;
+        const errorEl    = document.getElementById('icecube-error');
+
+        if (!password) {
+            errorEl.textContent = 'Please enter a password.';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const data = new FormData();
+        data.append('targetType', targetType);
+        data.append('targetId', targetId);
+        data.append('action', action);
+        data.append('password', password);
+        data.append(Craft.csrfTokenName, Craft.csrfTokenValue);
+
+        fetch(Craft.getActionUrl('icecube/unlock/validate'), {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: data,
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            if (json.success) {
+                unlocked[action] = true;
+                hideModal();
+
+                // Re-trigger the original action
+                if (action === 'edit' && state.pendingForm) {
+                    state.pendingForm.submit();
+                }
+                if (action === 'delete') {
+                    // Click the delete action again — now unlocked
+                    const btn = document.querySelector('[data-action="delete"], .btn.delete, #action-delete');
+                    if (btn) btn.click();
+                }
+            } else {
+                errorEl.textContent = json.error || 'Invalid password.';
+                errorEl.style.display = 'block';
+            }
+        })
+        .catch(function () {
+            errorEl.textContent = 'Network error. Please try again.';
+            errorEl.style.display = 'block';
+        });
+    }
+
+})();

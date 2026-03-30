@@ -1,0 +1,96 @@
+/* ── Icecube lock badge ─────────────────────────────────── */
+
+.icecube-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.icecube-badge--locked {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.icecube-badge--unlocked {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+/* ── Modal ──────────────────────────────────────────────── */
+
+.icecube-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icecube-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.icecube-modal-body {
+    position: relative;
+    background: var(--white, #fff);
+    border-radius: 10px;
+    padding: 30px;
+    width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.icecube-modal-body h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.icecube-modal-body p {
+    margin: 0 0 20px;
+    color: var(--gray-550, #8f98a3);
+}
+
+.icecube-modal-footer {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.icecube-modal-footer .error {
+    color: var(--red, #da5a47);
+    font-size: 13px;
+}
+
+/* ── Lock info panel (sidebar widget) ──────────────────── */
+
+.icecube-lock-panel {
+    padding: 14px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.icecube-lock-panel h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+}
+
+.icecube-lock-panel p {
+    margin: 0;
+    font-size: 12px;
+    color: #78350f;
+}
