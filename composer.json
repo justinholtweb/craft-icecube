@@ -2,7 +2,7 @@
     "name": "justinholtweb/craft-icecube",
     "description": "Lock entries, assets, categories, and globals behind a password in Craft CMS.",
     "type": "craft-plugin",
-    "license": "MIT",
+    "license": "proprietary",
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {

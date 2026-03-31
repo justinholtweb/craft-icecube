@@ -31,9 +31,18 @@ use yii\base\Event;
  */
 class Icecube extends Plugin
 {
+    public const EDITION_STANDARD = 'standard';
+
     public string $schemaVersion = '1.0.0';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = false;
+
+    public static function editions(): array
+    {
+        return [
+            self::EDITION_STANDARD,
+        ];
+    }
 
     public static function config(): array
     {
