@@ -96,6 +96,78 @@ class UnlockController extends Controller
     }
 
     /**
+     * POST icecube/locks/inline-save
+     * JSON endpoint — create or update an element-scope lock for a specific target.
+     */
+    public function actionInlineSave(): Response
+    {
+        $this->requirePostRequest();
+        $this->requireAcceptsJson();
+        $this->requirePermission('icecube:manageLocks');
+
+        $request = Craft::$app->getRequest();
+        $targetType = $request->getRequiredBodyParam('targetType');
+        $targetId = (int)$request->getRequiredBodyParam('targetId');
+
+        // Find existing element-scope lock or create a new one
+        $record = Icecube::getInstance()->locks->getDirectLock($targetType, $targetId) ?? new LockRecord();
+
+        $record->targetType = $targetType;
+        $record->targetId = $targetId;
+        $record->scope = 'element';
+        $record->scopeId = null;
+        $record->lockEdit = (bool)$request->getBodyParam('lockEdit', true);
+        $record->lockDelete = (bool)$request->getBodyParam('lockDelete', true);
+        $record->notes = $request->getBodyParam('notes') ?: null;
+        $record->enabled = true;
+
+        $password = $request->getBodyParam('password');
+        if (!empty($password)) {
+            $record->passwordHash = Auth::hashPassword($password);
+        }
+
+        if (!Icecube::getInstance()->locks->saveLock($record)) {
+            return $this->asJson([
+                'success' => false,
+                'error' => 'Could not save lock.',
+            ]);
+        }
+
+        return $this->asJson([
+            'success' => true,
+            'lock' => [
+                'id' => $record->id,
+                'lockEdit' => (bool)$record->lockEdit,
+                'lockDelete' => (bool)$record->lockDelete,
+                'notes' => $record->notes,
+                'hasPassword' => !empty($record->passwordHash),
+            ],
+        ]);
+    }
+
+    /**
+     * POST icecube/locks/inline-delete
+     * JSON endpoint — remove the element-scope lock for a target.
+     */
+    public function actionInlineDelete(): Response
+    {
+        $this->requirePostRequest();
+        $this->requireAcceptsJson();
+        $this->requirePermission('icecube:manageLocks');
+
+        $request = Craft::$app->getRequest();
+        $targetType = $request->getRequiredBodyParam('targetType');
+        $targetId = (int)$request->getRequiredBodyParam('targetId');
+
+        $record = Icecube::getInstance()->locks->getDirectLock($targetType, $targetId);
+        if ($record) {
+            $record->delete();
+        }
+
+        return $this->asJson(['success' => true]);
+    }
+
+    /**
      * POST icecube/locks/delete
      * Delete a lock.
      */

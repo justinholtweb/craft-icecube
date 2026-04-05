@@ -24,17 +24,39 @@
 
         state.targetType = meta.dataset.targetType;
         state.targetId   = meta.dataset.targetId;
-        const lockEdit   = meta.dataset.lockEdit === '1';
-        const lockDelete = meta.dataset.lockDelete === '1';
+        const lockEdit     = meta.dataset.lockEdit === '1';
+        const lockDelete   = meta.dataset.lockDelete === '1';
+        const editUnlocked = meta.dataset.editUnlocked === '1';
+        const autoPrompt   = meta.dataset.autoPrompt === '1';
 
-        if (lockEdit) {
-            interceptSave();
-        }
+        // Seed client unlock state from session
+        if (editUnlocked) unlocked.edit = true;
 
         if (lockDelete) {
             interceptDelete();
         }
+
+        // Always intercept save as a safety net in case the user somehow
+        // bypasses the overlay (shouldn't happen, but server will verify too)
+        if (lockEdit) {
+            interceptSave();
+        }
+
+        // Show the unlock overlay up-front on page load for locked-edit elements
+        if (autoPrompt) {
+            lockPageForEditing();
+            showModal('edit');
+        }
     });
+
+    // ── Page-level editor lock ────────────────────────────────
+    function lockPageForEditing() {
+        document.body.classList.add('icecube-page-locked');
+    }
+
+    function unlockPage() {
+        document.body.classList.remove('icecube-page-locked');
+    }
 
     // ── Intercept save ────────────────────────────────────────
     function interceptSave() {
@@ -108,12 +130,27 @@
 
         const cancelBtn = document.getElementById('icecube-cancel-btn');
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', hideModal);
+            cancelBtn.addEventListener('click', function () {
+                // If the page is locked for editing, cancelling means navigating away
+                if (document.body.classList.contains('icecube-page-locked')) {
+                    if (document.referrer && document.referrer !== window.location.href) {
+                        window.location.href = document.referrer;
+                    } else {
+                        window.history.back();
+                    }
+                    return;
+                }
+                hideModal();
+            });
         }
 
+        // Backdrop clicks don't dismiss when the page is locked — user must unlock or cancel
         const backdrop = document.querySelector('.icecube-modal-backdrop');
         if (backdrop) {
-            backdrop.addEventListener('click', hideModal);
+            backdrop.addEventListener('click', function () {
+                if (document.body.classList.contains('icecube-page-locked')) return;
+                hideModal();
+            });
         }
     });
 
@@ -149,12 +186,17 @@
                 unlocked[action] = true;
                 hideModal();
 
-                // Re-trigger the original action
+                // If the page was locked at load, release the overlay
+                if (action === 'edit') {
+                    unlockPage();
+                }
+
+                // Re-trigger the original action (only if one was deferred)
                 if (action === 'edit' && state.pendingForm) {
                     state.pendingForm.submit();
+                    state.pendingForm = null;
                 }
                 if (action === 'delete') {
-                    // Click the delete action again — now unlocked
                     const btn = document.querySelector('[data-action="delete"], .btn.delete, #action-delete');
                     if (btn) btn.click();
                 }
@@ -166,6 +208,93 @@
         .catch(function () {
             errorEl.textContent = 'Network error. Please try again.';
             errorEl.style.display = 'block';
+        });
+    }
+
+    // ── Inline lock-management panel ──────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+        initInlinePanels();
+    });
+    // Craft sometimes swaps in element editors after DOMContentLoaded
+    document.addEventListener('click', function () {
+        setTimeout(initInlinePanels, 100);
+    });
+
+    const initedPanels = new WeakSet();
+
+    function initInlinePanels() {
+        document.querySelectorAll('[data-icecube-panel]').forEach(function (panel) {
+            if (initedPanels.has(panel)) return;
+            initedPanels.add(panel);
+            wirePanel(panel);
+        });
+    }
+
+    function wirePanel(panel) {
+        const saveBtn = panel.querySelector('[data-icecube-action="save"]');
+        const deleteBtn = panel.querySelector('[data-icecube-action="delete"]');
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                submitPanel(panel, 'save');
+            });
+        }
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!confirm('Remove the Icecube lock from this item?')) return;
+                submitPanel(panel, 'delete');
+            });
+        }
+    }
+
+    function submitPanel(panel, action) {
+        const targetType = panel.dataset.targetType;
+        const targetId = panel.dataset.targetId;
+        const message = panel.querySelector('[data-icecube-message]');
+
+        const data = new FormData();
+        data.append('targetType', targetType);
+        data.append('targetId', targetId);
+        data.append(Craft.csrfTokenName, Craft.csrfTokenValue);
+
+        if (action === 'save') {
+            data.append('lockEdit', panel.querySelector('[data-icecube-field="lockEdit"]').checked ? '1' : '0');
+            data.append('lockDelete', panel.querySelector('[data-icecube-field="lockDelete"]').checked ? '1' : '0');
+            data.append('notes', panel.querySelector('[data-icecube-field="notes"]').value);
+            data.append('password', panel.querySelector('[data-icecube-field="password"]').value);
+        }
+
+        const url = Craft.getActionUrl(
+            action === 'save' ? 'icecube/unlock/inline-save' : 'icecube/unlock/inline-delete'
+        );
+
+        message.style.display = 'block';
+        message.className = 'icecube-inline-panel__message';
+        message.textContent = action === 'save' ? 'Saving…' : 'Removing…';
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' },
+            body: data,
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            if (json.success) {
+                message.className = 'icecube-inline-panel__message icecube-inline-panel__message--success';
+                message.textContent = action === 'save' ? 'Lock saved.' : 'Lock removed.';
+                setTimeout(function () { window.location.reload(); }, 500);
+            } else {
+                message.className = 'icecube-inline-panel__message icecube-inline-panel__message--error';
+                message.textContent = json.error || 'Something went wrong.';
+            }
+        })
+        .catch(function () {
+            message.className = 'icecube-inline-panel__message icecube-inline-panel__message--error';
+            message.textContent = 'Network error.';
         });
     }
 

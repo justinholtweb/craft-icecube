@@ -1,0 +1,66 @@
+{# Icecube inline lock-management panel for element edit pages #}
+{% set lockEdit = lock is not null ? lock.lockEdit : true %}
+{% set lockDelete = lock is not null ? lock.lockDelete : true %}
+{% set notes = lock is not null ? lock.notes : '' %}
+{% set hasPassword = lock is not null and lock.passwordHash is not empty %}
+
+<div class="icecube-inline-panel" data-icecube-panel
+     data-target-type="{{ targetType }}"
+     data-target-id="{{ targetId }}">
+
+    <div class="icecube-inline-panel__header">
+        <h3>
+            <span class="icecube-inline-panel__icon">{{ lock ? '🔒' : '🔓' }}</span>
+            Icecube Lock
+        </h3>
+        <p class="icecube-inline-panel__status" data-icecube-status>
+            {% if lock %}
+                This {{ label }} is locked
+                {%- if lock.lockEdit and lock.lockDelete %} for edit + delete
+                {%- elseif lock.lockEdit %} for edit
+                {%- elseif lock.lockDelete %} for delete
+                {% endif %}.
+            {% else %}
+                This {{ label }} is not locked.
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="icecube-inline-panel__fields">
+        <label class="icecube-inline-panel__toggle">
+            <input type="checkbox" data-icecube-field="lockEdit" {{ lockEdit ? 'checked' : '' }}>
+            Lock editing
+        </label>
+
+        <label class="icecube-inline-panel__toggle">
+            <input type="checkbox" data-icecube-field="lockDelete" {{ lockDelete ? 'checked' : '' }}>
+            Lock deletion
+        </label>
+
+        <label class="icecube-inline-panel__label">Notes</label>
+        <input type="text" class="text fullwidth" data-icecube-field="notes"
+               value="{{ notes }}" placeholder="Optional description">
+
+        <label class="icecube-inline-panel__label">
+            Password
+            <span class="icecube-inline-panel__hint">
+                {% if hasPassword %}leave blank to keep current{% else %}leave blank to use master password{% endif %}
+            </span>
+        </label>
+        <input type="password" class="text fullwidth" data-icecube-field="password"
+               autocomplete="new-password" placeholder="••••••••">
+    </div>
+
+    <div class="icecube-inline-panel__actions">
+        <button type="button" class="btn submit" data-icecube-action="save">
+            {{ lock ? 'Update lock' : 'Lock this ' ~ label }}
+        </button>
+        {% if lock %}
+            <button type="button" class="btn" data-icecube-action="delete">
+                Remove lock
+            </button>
+        {% endif %}
+    </div>
+
+    <div class="icecube-inline-panel__message" data-icecube-message style="display:none;"></div>
+</div>

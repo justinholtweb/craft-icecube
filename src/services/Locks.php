@@ -134,6 +134,21 @@ class Locks extends Component
             ->one();
     }
 
+    /**
+     * Get only a direct element-scope lock (ignores rule-based matches).
+     * Used by inline lock panels.
+     */
+    public function getDirectLock(string $targetType, int $targetId): ?LockRecord
+    {
+        return LockRecord::find()
+            ->where([
+                'targetType' => $targetType,
+                'targetId' => $targetId,
+                'scope' => 'element',
+            ])
+            ->one();
+    }
+
     // ── All locks ─────────────────────────────────────────────
 
     /**

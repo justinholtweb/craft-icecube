@@ -1,13 +1,14 @@
 {#
-  Rendered into the page by the IcecubeAsset bundle JS.
-  The JS injects targetType, targetId, and action before showing the modal.
+  Icecube unlock modal. Shown on page load for locked-for-edit elements,
+  or on demand when a delete is attempted on a locked-for-delete element.
 #}
 
 <div id="icecube-unlock-modal" class="icecube-modal" style="display:none;">
     <div class="icecube-modal-backdrop"></div>
     <div class="icecube-modal-body">
-        <h2>🔒 This item is locked by Icecube</h2>
-        <p>Enter the unlock password to continue.</p>
+        <div class="icecube-modal-icon">🔒</div>
+        <h2>This item is locked</h2>
+        <p>Enter the unlock password to make changes. The unlock stays valid for the rest of your session.</p>
 
         <form id="icecube-unlock-form">
             <div class="field">
@@ -25,12 +26,11 @@
             <input type="hidden" id="icecube-target-id" name="targetId" value="">
             <input type="hidden" id="icecube-action" name="action" value="">
 
+            <div id="icecube-error" class="error" style="display:none;"></div>
+
             <div class="icecube-modal-footer">
-                <div id="icecube-error" class="error" style="display:none;"></div>
-                <div class="btngroup">
-                    <button type="button" class="btn" id="icecube-cancel-btn">Cancel</button>
-                    <button type="submit" class="btn submit">Unlock</button>
-                </div>
+                <button type="button" class="btn" id="icecube-cancel-btn">Go back</button>
+                <button type="submit" class="btn submit">Unlock</button>
             </div>
         </form>
     </div>
