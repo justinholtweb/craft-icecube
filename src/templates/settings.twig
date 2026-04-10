@@ -1,23 +1,23 @@
 {% import '_includes/forms.twig' as forms %}
 
 {{ forms.passwordField({
-    label: 'Master Unlock Password',
-    instructions: 'Set or change the master password used when no per-lock password is configured. Leave blank to keep the current password.',
+    label: 'Master Unlock Password'|t('icecube'),
+    instructions: 'Set or change the master password used when no per-lock password is configured. Leave blank to keep the current password.'|t('icecube'),
     id: 'masterPassword',
     name: 'masterPassword',
     value: '',
-    placeholder: settings.masterPasswordHash ? '••••••••' : 'Set a password',
+    placeholder: settings.masterPasswordHash ? '••••••••' : 'Set a password'|t('icecube'),
 }) }}
 
 {% if settings.masterPasswordHash %}
-    <p class="light">A master password is currently set.</p>
+    <p class="light">{{ 'A master password is currently set.'|t('icecube') }}</p>
 {% endif %}
 
 <hr>
 
 {{ forms.lightswitchField({
-    label: 'Admins Bypass Locks',
-    instructions: 'When enabled, admin users can save and delete locked content without entering a password.',
+    label: 'Admins Bypass Locks'|t('icecube'),
+    instructions: 'When enabled, admin users can save and delete locked content without entering a password.'|t('icecube'),
     id: 'adminsBypass',
     name: 'adminsBypass',
     on: settings.adminsBypass,
@@ -25,31 +25,31 @@
 
 <hr>
 
-<h2>Supported Element Types</h2>
+<h2>{{ 'Supported Element Types'|t('icecube') }}</h2>
 
 {{ forms.lightswitchField({
-    label: 'Entries',
+    label: 'Entries'|t('icecube'),
     id: 'enableEntries',
     name: 'enableEntries',
     on: settings.enableEntries,
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Assets',
+    label: 'Assets'|t('icecube'),
     id: 'enableAssets',
     name: 'enableAssets',
     on: settings.enableAssets,
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Categories',
+    label: 'Categories'|t('icecube'),
     id: 'enableCategories',
     name: 'enableCategories',
     on: settings.enableCategories,
 }) }}
 
 {{ forms.lightswitchField({
-    label: 'Global Sets',
+    label: 'Global Sets'|t('icecube'),
     id: 'enableGlobals',
     name: 'enableGlobals',
     on: settings.enableGlobals,
@@ -58,8 +58,8 @@
 <hr>
 
 {{ forms.textField({
-    label: 'Unlock Session Duration (minutes)',
-    instructions: 'After entering the correct password, the unlock lasts this many minutes before requiring the password again.',
+    label: 'Unlock Session Duration (minutes)'|t('icecube'),
+    instructions: 'After entering the correct password, the unlock lasts this many minutes before requiring the password again.'|t('icecube'),
     id: 'unlockTtlMinutes',
     name: 'unlockTtlMinutes',
     value: settings.unlockTtlMinutes,

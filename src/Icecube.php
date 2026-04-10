@@ -3,23 +3,23 @@
 namespace justinholtweb\icecube;
 
 use Craft;
+use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin;
 use craft\elements\Asset;
-use craft\base\Element;
 use craft\elements\Category;
 use craft\elements\Entry;
 use craft\elements\GlobalSet;
 use craft\events\DefineHtmlEvent;
-use craft\events\ElementEvent;
 use craft\events\ModelEvent;
+use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\events\TemplateEvent;
 use craft\helpers\ElementHelper;
-use craft\services\Elements;
+use craft\helpers\Html;
 use craft\services\UserPermissions;
 use craft\web\UrlManager;
 use craft\web\View;
-use craft\events\RegisterUrlRulesEvent;
 use justinholtweb\icecube\assetbundles\icecube\IcecubeAsset;
 use justinholtweb\icecube\models\Settings;
 use justinholtweb\icecube\services\Auth;
@@ -31,6 +31,7 @@ use yii\base\Event;
  *
  * @property-read Locks $locks
  * @property-read Auth $auth
+ * @method Settings getSettings()
  */
 class Icecube extends Plugin
 {
@@ -72,6 +73,16 @@ class Icecube extends Plugin
         $this->_registerInlinePanels();
     }
 
+    public function getLocks(): Locks
+    {
+        return $this->get('locks');
+    }
+
+    public function getAuth(): Auth
+    {
+        return $this->get('auth');
+    }
+
     public function getCpNavItem(): ?array
     {
         $user = Craft::$app->getUser()->getIdentity();
@@ -83,7 +94,8 @@ class Icecube extends Plugin
         if (!$item) {
             return null;
         }
-        $item['label'] = 'Icecube';
+
+        $item['label'] = Craft::t('icecube', 'Icecube');
         $item['url'] = 'icecube/locks';
         return $item;
     }
@@ -103,6 +115,19 @@ class Icecube extends Plugin
         );
     }
 
+    public function beforeSaveSettings(): bool
+    {
+        $request = Craft::$app->getRequest();
+        $masterPassword = $request->getBodyParam('settings.masterPassword')
+            ?? $request->getBodyParam('masterPassword');
+
+        if (!empty($masterPassword)) {
+            $this->getSettings()->masterPasswordHash = Auth::hashPassword($masterPassword);
+        }
+
+        return parent::beforeSaveSettings();
+    }
+
     // ── Event handlers ────────────────────────────────────────
 
     private function _registerEventHandlers(): void
@@ -113,20 +138,21 @@ class Icecube extends Plugin
         Event::on(
             Element::class,
             Element::EVENT_BEFORE_SAVE,
-            function (ModelEvent $event) {
+            function(ModelEvent $event) {
                 /** @var Element $element */
                 $element = $event->sender;
+                $locks = $this->getLocks();
 
                 // Allow draft autosaves through — we only block canonical saves
                 if (ElementHelper::isDraftOrRevision($element)) {
                     return;
                 }
 
-                if (!$this->locks->isSupported($element)) {
+                if (!$locks->isSupported($element)) {
                     return;
                 }
 
-                if (!$this->locks->isLockedForEdit($element)) {
+                if (!$locks->isLockedForEdit($element)) {
                     return;
                 }
 
@@ -134,12 +160,12 @@ class Icecube extends Plugin
                     return;
                 }
 
-                if ($this->auth->hasValidUnlock($element, 'edit')) {
+                if ($this->getAuth()->hasValidUnlock($element, 'edit')) {
                     return;
                 }
 
                 $event->isValid = false;
-                $element->addError('icecube', 'This item is locked by Icecube. Enter the unlock password to save.');
+                $element->addError('icecube', Craft::t('icecube', 'This item is locked by Icecube. Enter the unlock password to save.'));
             }
         );
 
@@ -147,15 +173,16 @@ class Icecube extends Plugin
         Event::on(
             Element::class,
             Element::EVENT_BEFORE_DELETE,
-            function (ModelEvent $event) {
+            function(ModelEvent $event) {
                 /** @var Element $element */
                 $element = $event->sender;
+                $locks = $this->getLocks();
 
-                if (!$this->locks->isSupported($element)) {
+                if (!$locks->isSupported($element)) {
                     return;
                 }
 
-                if (!$this->locks->isLockedForDelete($element)) {
+                if (!$locks->isLockedForDelete($element)) {
                     return;
                 }
 
@@ -163,12 +190,12 @@ class Icecube extends Plugin
                     return;
                 }
 
-                if ($this->auth->hasValidUnlock($element, 'delete')) {
+                if ($this->getAuth()->hasValidUnlock($element, 'delete')) {
                     return;
                 }
 
                 $event->isValid = false;
-                Craft::$app->getSession()->setError('This item is locked by Icecube. Enter the unlock password to delete.');
+                Craft::$app->getSession()->setError(Craft::t('icecube', 'This item is locked by Icecube. Enter the unlock password to delete.'));
             }
         );
 
@@ -176,11 +203,11 @@ class Icecube extends Plugin
         Event::on(
             GlobalSet::class,
             GlobalSet::EVENT_BEFORE_SAVE,
-            function (\craft\events\ModelEvent $event) {
+            function(ModelEvent $event) {
                 /** @var GlobalSet $globalSet */
                 $globalSet = $event->sender;
 
-                if (!$this->locks->isLockedGlobal($globalSet, 'edit')) {
+                if (!$this->getLocks()->isLockedGlobal($globalSet, 'edit')) {
                     return;
                 }
 
@@ -188,12 +215,12 @@ class Icecube extends Plugin
                     return;
                 }
 
-                if ($this->auth->hasValidUnlockForGlobal($globalSet, 'edit')) {
+                if ($this->getAuth()->hasValidUnlockForGlobal($globalSet, 'edit')) {
                     return;
                 }
 
                 $event->isValid = false;
-                $globalSet->addError('icecube', 'This global set is locked by Icecube. Enter the unlock password to save.');
+                $globalSet->addError('icecube', Craft::t('icecube', 'This global set is locked by Icecube. Enter the unlock password to save.'));
             }
         );
     }
@@ -205,7 +232,7 @@ class Icecube extends Plugin
         Event::on(
             UrlManager::class,
             UrlManager::EVENT_REGISTER_CP_URL_RULES,
-            function (RegisterUrlRulesEvent $event) {
+            function(RegisterUrlRulesEvent $event) {
                 $event->rules['icecube'] = 'icecube/unlock/manage';
                 $event->rules['icecube/unlock'] = 'icecube/unlock/validate';
                 $event->rules['icecube/locks'] = 'icecube/unlock/manage';
@@ -224,18 +251,18 @@ class Icecube extends Plugin
         Event::on(
             UserPermissions::class,
             UserPermissions::EVENT_REGISTER_PERMISSIONS,
-            function (RegisterUserPermissionsEvent $event) {
+            function(RegisterUserPermissionsEvent $event) {
                 $event->permissions[] = [
-                    'heading' => 'Icecube',
+                    'heading' => Craft::t('icecube', 'Icecube'),
                     'permissions' => [
                         'icecube:manageLocks' => [
-                            'label' => 'Manage locks',
+                            'label' => Craft::t('icecube', 'Manage locks'),
                         ],
                         'icecube:bypassLocks' => [
-                            'label' => 'Bypass all locks without password',
+                            'label' => Craft::t('icecube', 'Bypass all locks without password'),
                         ],
                         'icecube:unlockLockedContent' => [
-                            'label' => 'Unlock locked content with password',
+                            'label' => Craft::t('icecube', 'Unlock locked content with password'),
                         ],
                     ],
                 ];
@@ -251,8 +278,10 @@ class Icecube extends Plugin
         Event::on(
             View::class,
             View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
-            function (\craft\events\TemplateEvent $event) {
+            function(TemplateEvent $event) {
                 $view = Craft::$app->getView();
+                $locks = $this->getLocks();
+                $auth = $this->getAuth();
 
                 // Determine if we're on an element edit page and get the element
                 $element = $this->_resolveEditingElement();
@@ -265,17 +294,17 @@ class Icecube extends Plugin
                 $targetId = null;
 
                 if ($element instanceof GlobalSet) {
-                    if (!$this->locks->isLockedGlobal($element, 'edit') && !$this->locks->isLockedGlobal($element, 'delete')) {
+                    if (!$locks->isLockedGlobal($element, 'edit') && !$locks->isLockedGlobal($element, 'delete')) {
                         return;
                     }
-                    $lock = $this->locks->getMatchingGlobalLock($element);
+                    $lock = $locks->getMatchingGlobalLock($element);
                     $targetType = 'global';
                     $targetId = $element->id;
                 } else {
-                    if (!$this->locks->isSupported($element)) {
+                    if (!$locks->isSupported($element)) {
                         return;
                     }
-                    $lock = $this->locks->getMatchingLock($element);
+                    $lock = $locks->getMatchingLock($element);
                     if (!$lock || !$lock->enabled) {
                         return;
                     }
@@ -301,35 +330,41 @@ class Icecube extends Plugin
 
                 // Determine if a valid session unlock already exists
                 if ($targetType === 'global') {
-                    $editUnlocked = $this->auth->hasValidUnlockForGlobal($element, 'edit');
+                    $editUnlocked = $auth->hasValidUnlockForGlobal($element, 'edit');
                 } else {
-                    $editUnlocked = $this->auth->hasValidUnlock($element, 'edit');
+                    $editUnlocked = $auth->hasValidUnlock($element, 'edit');
                 }
 
                 // Auto-prompt on page load if locked for edit and not yet unlocked this session
                 $autoPrompt = ($lock->lockEdit && !$editUnlocked) ? '1' : '0';
 
                 // Inject metadata element for JS
-                $lockEdit = $lock->lockEdit ? '1' : '0';
-                $lockDelete = $lock->lockDelete ? '1' : '0';
-                $editUnlockedAttr = $editUnlocked ? '1' : '0';
-                $notes = htmlspecialchars($lock->notes ?? '', ENT_QUOTES);
-                $view->registerHtml(
-                    "<div id=\"icecube-meta\" data-target-type=\"{$targetType}\" data-target-id=\"{$targetId}\" data-lock-edit=\"{$lockEdit}\" data-lock-delete=\"{$lockDelete}\" data-edit-unlocked=\"{$editUnlockedAttr}\" data-auto-prompt=\"{$autoPrompt}\" data-notes=\"{$notes}\" style=\"display:none;\"></div>"
-                );
+                $metaHtml = Html::tag('div', '', [
+                    'id' => 'icecube-meta',
+                    'data-target-type' => $targetType,
+                    'data-target-id' => (string)$targetId,
+                    'data-lock-edit' => $lock->lockEdit ? '1' : '0',
+                    'data-lock-delete' => $lock->lockDelete ? '1' : '0',
+                    'data-edit-unlocked' => $editUnlocked ? '1' : '0',
+                    'data-auto-prompt' => $autoPrompt,
+                    'data-notes' => (string)($lock->notes ?? ''),
+                    'style' => 'display:none;',
+                ]);
+                $view->registerHtml($metaHtml);
 
                 // Inject the unlock modal template
                 $modalHtml = $view->renderTemplate('icecube/_components/unlock-modal');
                 $view->registerHtml($modalHtml);
 
                 // Inject lock badge into the page
-                $badgeHtml = '<div class="icecube-badge icecube-badge--locked" style="margin-bottom:14px;">';
-                $badgeHtml .= 'Locked by Icecube';
+                $badgeText = Craft::t('icecube', 'Locked by Icecube');
                 if ($lock->notes) {
-                    $badgeHtml .= ' — ' . htmlspecialchars($lock->notes);
+                    $badgeText .= ' — ' . $lock->notes;
                 }
-                $badgeHtml .= '</div>';
-                $view->registerHtml($badgeHtml);
+                $view->registerHtml(Html::tag('div', Html::encode($badgeText), [
+                    'class' => 'icecube-badge icecube-badge--locked',
+                    'style' => 'margin-bottom:14px;',
+                ]));
             }
         );
     }
@@ -342,7 +377,7 @@ class Icecube extends Plugin
         Event::on(
             Element::class,
             Element::EVENT_DEFINE_SIDEBAR_HTML,
-            function (DefineHtmlEvent $event) {
+            function(DefineHtmlEvent $event) {
                 /** @var Element $element */
                 $element = $event->sender;
                 $html = $this->_renderInlinePanel($element);
@@ -353,7 +388,7 @@ class Icecube extends Plugin
         );
 
         // Global-set edit page uses the cp.globals.edit template hook
-        Craft::$app->getView()->hook('cp.globals.edit', function (array &$context) {
+        Craft::$app->getView()->hook('cp.globals.edit', function(array &$context) {
             /** @var GlobalSet|null $globalSet */
             $globalSet = $context['globalSet'] ?? null;
             if (!$globalSet) {
@@ -375,7 +410,6 @@ class Icecube extends Plugin
         }
 
         // Resolve the canonical ID — Craft 5 opens entries as provisional drafts
-        $canonicalId = null;
         if ($element instanceof Element) {
             $canonicalId = $element->getCanonicalId();
         } else {
@@ -395,21 +429,29 @@ class Icecube extends Plugin
         $label = null;
 
         if ($element instanceof Entry) {
-            if (!$settings->enableEntries) return null;
+            if (!$settings->enableEntries) {
+                return null;
+            }
             $targetType = 'entry';
-            $label = 'entry';
+            $label = Craft::t('icecube', 'entry');
         } elseif ($element instanceof Asset) {
-            if (!$settings->enableAssets) return null;
+            if (!$settings->enableAssets) {
+                return null;
+            }
             $targetType = 'asset';
-            $label = 'asset';
+            $label = Craft::t('icecube', 'asset');
         } elseif ($element instanceof Category) {
-            if (!$settings->enableCategories) return null;
+            if (!$settings->enableCategories) {
+                return null;
+            }
             $targetType = 'category';
-            $label = 'category';
+            $label = Craft::t('icecube', 'category');
         } elseif ($element instanceof GlobalSet) {
-            if (!$settings->enableGlobals) return null;
+            if (!$settings->enableGlobals) {
+                return null;
+            }
             $targetType = 'global';
-            $label = 'global set';
+            $label = Craft::t('icecube', 'global set');
         } else {
             return null;
         }
@@ -417,7 +459,7 @@ class Icecube extends Plugin
         $view = Craft::$app->getView();
         $view->registerAssetBundle(IcecubeAsset::class);
 
-        $lock = $this->locks->getDirectLock($targetType, (int)$canonicalId);
+        $lock = $this->getLocks()->getDirectLock($targetType, (int)$canonicalId);
 
         return $view->renderTemplate('icecube/_components/lock-panel', [
             'targetType' => $targetType,
@@ -483,20 +525,6 @@ class Icecube extends Plugin
         return null;
     }
 
-    // ── Settings save — hash master password ──────────────────
-
-    public function beforeSaveSettings(): bool
-    {
-        $request = Craft::$app->getRequest();
-        $masterPassword = $request->getBodyParam('settings.masterPassword') ?? $request->getBodyParam('masterPassword');
-
-        if (!empty($masterPassword)) {
-            $this->getSettings()->masterPasswordHash = Auth::hashPassword($masterPassword);
-        }
-
-        return parent::beforeSaveSettings();
-    }
-
     // ── Helpers ────────────────────────────────────────────────
 
     private function _userCanBypass(): bool
@@ -506,7 +534,6 @@ class Icecube extends Plugin
             return false;
         }
 
-        /** @var Settings $settings */
         $settings = $this->getSettings();
 
         // Admin users: bypass only if setting is enabled.

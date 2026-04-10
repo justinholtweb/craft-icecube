@@ -26,7 +26,7 @@ class UnlockController extends Controller
         $action = $request->getRequiredBodyParam('action'); // edit|delete
         $password = $request->getRequiredBodyParam('password');
 
-        $auth = Icecube::getInstance()->auth;
+        $auth = Icecube::getInstance()->getAuth();
         $success = $auth->attemptUnlock($targetType, $targetId, $action, $password);
 
         if ($success) {
@@ -35,7 +35,7 @@ class UnlockController extends Controller
 
         return $this->asJson([
             'success' => false,
-            'error' => 'Invalid unlock password.',
+            'error' => Craft::t('icecube', 'Invalid unlock password.'),
         ]);
     }
 
@@ -47,7 +47,7 @@ class UnlockController extends Controller
     {
         $this->requirePermission('icecube:manageLocks');
 
-        $locks = Icecube::getInstance()->locks->getAllLocks();
+        $locks = Icecube::getInstance()->getLocks()->getAllLocks();
 
         return $this->renderTemplate('icecube/_locks/index', [
             'locks' => $locks,
@@ -66,7 +66,7 @@ class UnlockController extends Controller
         $request = Craft::$app->getRequest();
         $id = $request->getBodyParam('id');
 
-        $record = $id ? LockRecord::findOne($id) : new LockRecord();
+        $record = $id ? LockRecord::findOne($id) : null;
         if (!$record) {
             $record = new LockRecord();
         }
@@ -86,12 +86,12 @@ class UnlockController extends Controller
             $record->passwordHash = Auth::hashPassword($password);
         }
 
-        if (!Icecube::getInstance()->locks->saveLock($record)) {
-            Craft::$app->getSession()->setError('Could not save lock.');
+        if (!Icecube::getInstance()->getLocks()->saveLock($record)) {
+            Craft::$app->getSession()->setError(Craft::t('icecube', 'Couldn’t save lock.'));
             return $this->redirectToPostedUrl();
         }
 
-        Craft::$app->getSession()->setNotice('Lock saved.');
+        Craft::$app->getSession()->setNotice(Craft::t('icecube', 'Lock saved.'));
         return $this->redirectToPostedUrl();
     }
 
@@ -110,7 +110,7 @@ class UnlockController extends Controller
         $targetId = (int)$request->getRequiredBodyParam('targetId');
 
         // Find existing element-scope lock or create a new one
-        $record = Icecube::getInstance()->locks->getDirectLock($targetType, $targetId) ?? new LockRecord();
+        $record = Icecube::getInstance()->getLocks()->getDirectLock($targetType, $targetId) ?? new LockRecord();
 
         $record->targetType = $targetType;
         $record->targetId = $targetId;
@@ -126,10 +126,10 @@ class UnlockController extends Controller
             $record->passwordHash = Auth::hashPassword($password);
         }
 
-        if (!Icecube::getInstance()->locks->saveLock($record)) {
+        if (!Icecube::getInstance()->getLocks()->saveLock($record)) {
             return $this->asJson([
                 'success' => false,
-                'error' => 'Could not save lock.',
+                'error' => Craft::t('icecube', 'Couldn’t save lock.'),
             ]);
         }
 
@@ -159,7 +159,7 @@ class UnlockController extends Controller
         $targetType = $request->getRequiredBodyParam('targetType');
         $targetId = (int)$request->getRequiredBodyParam('targetId');
 
-        $record = Icecube::getInstance()->locks->getDirectLock($targetType, $targetId);
+        $record = Icecube::getInstance()->getLocks()->getDirectLock($targetType, $targetId);
         if ($record) {
             $record->delete();
         }
@@ -177,9 +177,9 @@ class UnlockController extends Controller
         $this->requirePermission('icecube:manageLocks');
 
         $id = (int)Craft::$app->getRequest()->getRequiredBodyParam('id');
-        Icecube::getInstance()->locks->deleteLockById($id);
+        Icecube::getInstance()->getLocks()->deleteLockById($id);
 
-        Craft::$app->getSession()->setNotice('Lock removed.');
+        Craft::$app->getSession()->setNotice(Craft::t('icecube', 'Lock removed.'));
         return $this->redirectToPostedUrl();
     }
 }

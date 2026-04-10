@@ -1,20 +1,20 @@
 {% extends '_layouts/cp' %}
-{% set title = 'Icecube Locks' %}
+{% set title = 'Icecube Locks'|t('icecube') %}
 
 {% block content %}
-    <h2>Active Locks</h2>
+    <h2>{{ 'Active Locks'|t('icecube') }}</h2>
 
     {% if locks | length %}
         <table class="data fullwidth">
             <thead>
                 <tr>
-                    <th>Type</th>
-                    <th>Scope</th>
-                    <th>Target / Scope ID</th>
-                    <th>Edit</th>
-                    <th>Delete</th>
-                    <th>Enabled</th>
-                    <th>Notes</th>
+                    <th>{{ 'Type'|t('icecube') }}</th>
+                    <th>{{ 'Scope'|t('icecube') }}</th>
+                    <th>{{ 'Target / Scope ID'|t('icecube') }}</th>
+                    <th>{{ 'Edit'|t('icecube') }}</th>
+                    <th>{{ 'Delete'|t('icecube') }}</th>
+                    <th>{{ 'Enabled'|t('icecube') }}</th>
+                    <th>{{ 'Notes'|t('icecube') }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -26,7 +26,7 @@
                         <td>{{ lock.targetId ?? lock.scopeId ?? '—' }}</td>
                         <td>{{ lock.lockEdit ? '🔒' : '—' }}</td>
                         <td>{{ lock.lockDelete ? '🔒' : '—' }}</td>
-                        <td>{{ lock.enabled ? 'Yes' : 'No' }}</td>
+                        <td>{{ lock.enabled ? 'Yes'|t('icecube') : 'No'|t('icecube') }}</td>
                         <td>{{ lock.notes ?? '' }}</td>
                         <td>
                             <form method="post" action="">
@@ -34,7 +34,7 @@
                                 {{ actionInput('icecube/unlock/delete-lock') }}
                                 {{ redirectInput('icecube/locks') }}
                                 <input type="hidden" name="id" value="{{ lock.id }}">
-                                <button type="submit" class="btn small">Remove</button>
+                                <button type="submit" class="btn small">{{ 'Remove'|t('icecube') }}</button>
                             </form>
                         </td>
                     </tr>
@@ -42,12 +42,12 @@
             </tbody>
         </table>
     {% else %}
-        <p>No locks configured yet.</p>
+        <p>{{ 'No locks configured yet.'|t('icecube') }}</p>
     {% endif %}
 
     <hr>
 
-    <h2>Add a Lock</h2>
+    <h2>{{ 'Add a Lock'|t('icecube') }}</h2>
 
     <form method="post" action="">
         {{ csrfInput() }}
@@ -57,78 +57,78 @@
         {% import '_includes/forms.twig' as forms %}
 
         {{ forms.selectField({
-            label: 'Target Type',
+            label: 'Target Type'|t('icecube'),
             id: 'targetType',
             name: 'targetType',
             options: [
-                { label: 'Entry', value: 'entry' },
-                { label: 'Asset', value: 'asset' },
-                { label: 'Category', value: 'category' },
-                { label: 'Global Set', value: 'global' },
+                { label: 'Entry'|t('icecube'), value: 'entry' },
+                { label: 'Asset'|t('icecube'), value: 'asset' },
+                { label: 'Category'|t('icecube'), value: 'category' },
+                { label: 'Global Set'|t('icecube'), value: 'global' },
             ],
         }) }}
 
         {{ forms.selectField({
-            label: 'Scope',
+            label: 'Scope'|t('icecube'),
             id: 'scope',
             name: 'scope',
             options: [
-                { label: 'Specific element', value: 'element' },
-                { label: 'Section (all entries)', value: 'section' },
-                { label: 'Volume (all assets)', value: 'volume' },
-                { label: 'Category group', value: 'group' },
-                { label: 'Global set', value: 'globalSet' },
+                { label: 'Specific element'|t('icecube'), value: 'element' },
+                { label: 'Section (all entries)'|t('icecube'), value: 'section' },
+                { label: 'Volume (all assets)'|t('icecube'), value: 'volume' },
+                { label: 'Category group'|t('icecube'), value: 'group' },
+                { label: 'Global Set'|t('icecube'), value: 'globalSet' },
             ],
         }) }}
 
         {{ forms.textField({
-            label: 'Target ID',
-            instructions: 'The element ID or global-set ID for direct locks. Leave blank for rule-based locks.',
+            label: 'Target ID'|t('icecube'),
+            instructions: 'The element ID or global-set ID for direct locks. Leave blank for rule-based locks.'|t('icecube'),
             id: 'targetId',
             name: 'targetId',
         }) }}
 
         {{ forms.textField({
-            label: 'Scope ID',
-            instructions: 'The section, volume, category-group, or global-set ID for rule-based locks.',
+            label: 'Scope ID'|t('icecube'),
+            instructions: 'The section, volume, category-group, or global-set ID for rule-based locks.'|t('icecube'),
             id: 'scopeId',
             name: 'scopeId',
         }) }}
 
         {{ forms.lightswitchField({
-            label: 'Lock Editing',
+            label: 'Lock Editing'|t('icecube'),
             id: 'lockEdit',
             name: 'lockEdit',
             on: true,
         }) }}
 
         {{ forms.lightswitchField({
-            label: 'Lock Deletion',
+            label: 'Lock Deletion'|t('icecube'),
             id: 'lockDelete',
             name: 'lockDelete',
             on: true,
         }) }}
 
         {{ forms.passwordField({
-            label: 'Per-Lock Password (optional)',
-            instructions: 'Leave blank to use the master password.',
+            label: 'Per-Lock Password (optional)'|t('icecube'),
+            instructions: 'Leave blank to use the master password.'|t('icecube'),
             id: 'password',
             name: 'password',
         }) }}
 
         {{ forms.textareaField({
-            label: 'Notes',
+            label: 'Notes'|t('icecube'),
             id: 'notes',
             name: 'notes',
         }) }}
 
         {{ forms.lightswitchField({
-            label: 'Enabled',
+            label: 'Enabled'|t('icecube'),
             id: 'enabled',
             name: 'enabled',
             on: true,
         }) }}
 
-        <button type="submit" class="btn submit">Save Lock</button>
+        <button type="submit" class="btn submit">{{ 'Save Lock'|t('icecube') }}</button>
     </form>
 {% endblock %}

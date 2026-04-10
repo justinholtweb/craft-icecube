@@ -4,6 +4,9 @@ namespace justinholtweb\icecube\services;
 
 use Craft;
 use craft\base\Component;
+use craft\elements\Asset;
+use craft\elements\Category;
+use craft\elements\Entry;
 use craft\elements\GlobalSet;
 use justinholtweb\icecube\Icecube;
 use justinholtweb\icecube\records\LockRecord;
@@ -17,7 +20,12 @@ class Auth extends Component
      */
     public function hasValidUnlock(mixed $element, string $action): bool
     {
-        $key = $this->_sessionKey($this->_resolveTargetType($element), $element->id, $action);
+        $targetType = $this->_resolveTargetType($element);
+        if ($targetType === null) {
+            return false;
+        }
+
+        $key = $this->_sessionKey($targetType, $element->id, $action);
         return $this->_isSessionKeyValid($key);
     }
 
@@ -39,9 +47,9 @@ class Auth extends Component
     public function attemptUnlock(string $targetType, int $targetId, string $action, string $password): bool
     {
         $lock = $this->_findLock($targetType, $targetId);
-        $hash = Icecube::getInstance()->locks->getPasswordHashForLock($lock);
+        $hash = Icecube::getInstance()->getLocks()->getPasswordHashForLock($lock);
 
-        if (empty($hash)) {
+        if ($hash === '') {
             // No password configured — nothing to verify against
             return false;
         }
@@ -93,29 +101,31 @@ class Auth extends Component
         return true;
     }
 
-    private function _resolveTargetType(mixed $element): string
+    private function _resolveTargetType(mixed $element): ?string
     {
         return match (true) {
-            $element instanceof \craft\elements\Entry => 'entry',
-            $element instanceof \craft\elements\Asset => 'asset',
-            $element instanceof \craft\elements\Category => 'category',
-            default => 'unknown',
+            $element instanceof Entry => 'entry',
+            $element instanceof Asset => 'asset',
+            $element instanceof Category => 'category',
+            default => null,
         };
     }
 
     private function _findLock(string $targetType, int $targetId): ?LockRecord
     {
+        $locks = Icecube::getInstance()->getLocks();
+
         if ($targetType === 'global') {
             $globalSet = Craft::$app->getGlobals()->getSetById($targetId);
             if ($globalSet) {
-                return Icecube::getInstance()->locks->getMatchingGlobalLock($globalSet);
+                return $locks->getMatchingGlobalLock($globalSet);
             }
             return null;
         }
 
         $element = Craft::$app->getElements()->getElementById($targetId);
         if ($element) {
-            return Icecube::getInstance()->locks->getMatchingLock($element);
+            return $locks->getMatchingLock($element);
         }
         return null;
     }

@@ -11,17 +11,19 @@
     <div class="icecube-inline-panel__header">
         <h3>
             <span class="icecube-inline-panel__icon">{{ lock ? '🔒' : '🔓' }}</span>
-            Icecube Lock
+            {{ 'Icecube Lock'|t('icecube') }}
         </h3>
         <p class="icecube-inline-panel__status" data-icecube-status>
             {% if lock %}
-                This {{ label }} is locked
-                {%- if lock.lockEdit and lock.lockDelete %} for edit + delete
-                {%- elseif lock.lockEdit %} for edit
-                {%- elseif lock.lockDelete %} for delete
-                {% endif %}.
+                {% if lock.lockEdit and lock.lockDelete %}
+                    {{ 'This {label} is locked for edit + delete.'|t('icecube', { label: label }) }}
+                {% elseif lock.lockEdit %}
+                    {{ 'This {label} is locked for edit.'|t('icecube', { label: label }) }}
+                {% elseif lock.lockDelete %}
+                    {{ 'This {label} is locked for delete.'|t('icecube', { label: label }) }}
+                {% endif %}
             {% else %}
-                This {{ label }} is not locked.
+                {{ 'This {label} is not locked.'|t('icecube', { label: label }) }}
             {% endif %}
         </p>
     </div>
@@ -29,22 +31,26 @@
     <div class="icecube-inline-panel__fields">
         <label class="icecube-inline-panel__toggle">
             <input type="checkbox" data-icecube-field="lockEdit" {{ lockEdit ? 'checked' : '' }}>
-            Lock editing
+            {{ 'Lock editing'|t('icecube') }}
         </label>
 
         <label class="icecube-inline-panel__toggle">
             <input type="checkbox" data-icecube-field="lockDelete" {{ lockDelete ? 'checked' : '' }}>
-            Lock deletion
+            {{ 'Lock deletion'|t('icecube') }}
         </label>
 
-        <label class="icecube-inline-panel__label">Notes</label>
+        <label class="icecube-inline-panel__label">{{ 'Notes'|t('icecube') }}</label>
         <input type="text" class="text fullwidth" data-icecube-field="notes"
-               value="{{ notes }}" placeholder="Optional description">
+               value="{{ notes }}" placeholder="{{ 'Optional description'|t('icecube') }}">
 
         <label class="icecube-inline-panel__label">
-            Password
+            {{ 'Password'|t('icecube') }}
             <span class="icecube-inline-panel__hint">
-                {% if hasPassword %}leave blank to keep current{% else %}leave blank to use master password{% endif %}
+                {% if hasPassword %}
+                    {{ 'leave blank to keep current'|t('icecube') }}
+                {% else %}
+                    {{ 'leave blank to use master password'|t('icecube') }}
+                {% endif %}
             </span>
         </label>
         <input type="password" class="text fullwidth" data-icecube-field="password"
@@ -53,11 +59,15 @@
 
     <div class="icecube-inline-panel__actions">
         <button type="button" class="btn submit" data-icecube-action="save">
-            {{ lock ? 'Update lock' : 'Lock this ' ~ label }}
+            {% if lock %}
+                {{ 'Update lock'|t('icecube') }}
+            {% else %}
+                {{ 'Lock this {label}'|t('icecube', { label: label }) }}
+            {% endif %}
         </button>
         {% if lock %}
             <button type="button" class="btn" data-icecube-action="delete">
-                Remove lock
+                {{ 'Remove lock'|t('icecube') }}
             </button>
         {% endif %}
     </div>

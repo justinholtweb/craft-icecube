@@ -40,13 +40,13 @@ class Locks extends Component
     public function isLockedForEdit(mixed $element): bool
     {
         $lock = $this->getMatchingLock($element);
-        return $lock && $lock->lockEdit && $lock->enabled;
+        return $lock !== null && (bool)$lock->lockEdit;
     }
 
     public function isLockedForDelete(mixed $element): bool
     {
         $lock = $this->getMatchingLock($element);
-        return $lock && $lock->lockDelete && $lock->enabled;
+        return $lock !== null && (bool)$lock->lockDelete;
     }
 
     /**

@@ -7,8 +7,8 @@
     <div class="icecube-modal-backdrop"></div>
     <div class="icecube-modal-body">
         <div class="icecube-modal-icon">🔒</div>
-        <h2>This item is locked</h2>
-        <p>Enter the unlock password to make changes. The unlock stays valid for the rest of your session.</p>
+        <h2>{{ 'This item is locked'|t('icecube') }}</h2>
+        <p>{{ 'Enter the unlock password to make changes. The unlock stays valid for the rest of your session.'|t('icecube') }}</p>
 
         <form id="icecube-unlock-form">
             <div class="field">
@@ -17,7 +17,7 @@
                            id="icecube-password"
                            name="password"
                            class="text fullwidth"
-                           placeholder="Unlock password"
+                           placeholder="{{ 'Unlock password'|t('icecube') }}"
                            autocomplete="off">
                 </div>
             </div>
@@ -29,8 +29,8 @@
             <div id="icecube-error" class="error" style="display:none;"></div>
 
             <div class="icecube-modal-footer">
-                <button type="button" class="btn" id="icecube-cancel-btn">Go back</button>
-                <button type="submit" class="btn submit">Unlock</button>
+                <button type="button" class="btn" id="icecube-cancel-btn">{{ 'Go back'|t('icecube') }}</button>
+                <button type="submit" class="btn submit">{{ 'Unlock'|t('icecube') }}</button>
             </div>
         </form>
     </div>
